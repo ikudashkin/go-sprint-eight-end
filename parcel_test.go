@@ -2,16 +2,16 @@ package main
 
 import (
 	"database/sql"
-	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 var (
-	// randSource источник псевдо случайных чисел.
+	// randSource источник псевдо случайных чисел.Я
 	// Для повышения уникальности в качестве seed
 	// используется текущее время в unix формате (в виде числа)
 	randSource = rand.NewSource(time.Now().UnixNano())
@@ -38,22 +38,23 @@ func initDb() (*sql.DB, error) {
 func TestAddGetDelete(t *testing.T) {
 	// prepare
 	db, err := initDb() // настройте подключение к БД
+	require.NoError(t, err)
+	defer db.Close()
 	store := NewParcelStore(db)
 	parcel := getTestParcel()
 
 	// add
 	// добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
 	parcel.Number, err = store.Add(parcel)
-
 	require.NoError(t, err)
-	require.Greater(t, parcel.Number, 0)
+	require.NotEmpty(t, parcel.Number)
 
 	// get
 	// получите только что добавленную посылку, убедитесь в отсутствии ошибки
 	// проверьте, что значения всех полей в полученном объекте совпадают со значениями полей в переменной parcel
 	stored, err := store.Get(parcel.Number)
 	require.NoError(t, err)
-	assert.Equal(t, parcel, stored)
+	require.Equal(t, parcel, stored)
 
 	// delete
 	// удалите добавленную посылку, убедитесь в отсутствии ошибки
@@ -70,9 +71,7 @@ func TestSetAddress(t *testing.T) {
 	// prepare
 	db, err := initDb() // настройте подключение к БД
 
-	if err != nil {
-		require.NoError(t, err)
-	}
+	require.NoError(t, err)
 	defer db.Close()
 
 	store := NewParcelStore(db)
@@ -135,9 +134,7 @@ func TestSetStatus(t *testing.T) {
 func TestGetByClient(t *testing.T) {
 	// prepare
 	db, err := initDb() // настройте подключение к БД
-	if err != nil {
-		require.NoError(t, err)
-	}
+	require.NoError(t, err)
 	defer db.Close()
 
 	store := NewParcelStore(db)
@@ -160,7 +157,6 @@ func TestGetByClient(t *testing.T) {
 		id, err := store.Add(parcels[i]) // добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
 
 		require.NoError(t, err)
-		require.NotEmpty(t, id)
 
 		// обновляем идентификатор добавленной у посылки
 		parcels[i].Number = id
@@ -174,15 +170,15 @@ func TestGetByClient(t *testing.T) {
 	// убедитесь в отсутствии ошибки
 	require.NoError(t, err)
 	// убедитесь, что количество полученных посылок совпадает с количеством добавленных
-	require.Equal(t, len(storedParcels), len(parcels))
+	assert.Equal(t, len(parcels), len(parcelMap))
 
 	// check
 	for _, parcel := range storedParcels {
 		// в parcelMap лежат добавленные посылки, ключ - идентификатор посылки, значение - сама посылка
 		// убедитесь, что все посылки из storedParcels есть в parcelMap
-		mapParcel, found := parcelMap[parcel.Number]
+		_, found := parcelMap[parcel.Number]
 		require.True(t, found)
 		// убедитесь, что значения полей полученных посылок заполнены верно
-		require.Equal(t, parcel, mapParcel)
+		require.Equal(t, parcelMap[parcel.Number], parcel)
 	}
 }

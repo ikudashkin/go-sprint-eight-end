@@ -27,10 +27,10 @@ func (s ParcelStore) Add(p Parcel) (int, error) {
 	// верните идентификатор последней добавленной записи
 	lastId, err := res.LastInsertId()
 	if err != nil {
-		return int(lastId), err
+		return 0, err
 	}
 
-	return 0, nil
+	return int(lastId), nil
 }
 
 func (s ParcelStore) Get(number int) (Parcel, error) {
@@ -63,6 +63,11 @@ func (s ParcelStore) GetByClient(client int) ([]Parcel, error) {
 		}
 		res = append(res, p)
 	}
+
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
 	return res, nil
 }
 
@@ -77,9 +82,10 @@ func (s ParcelStore) SetStatus(number int, status string) error {
 func (s ParcelStore) SetAddress(number int, address string) error {
 	// реализуйте обновление адреса в таблице parcel
 	// менять адрес можно только если значение статуса registered
-	_, err := s.db.Exec("UPDATE parcel SET address = :address WHERE number = :number",
+	_, err := s.db.Exec("UPDATE parcel SET address = :address WHERE number = :number AND status = :status",
 		sql.Named("address", address),
-		sql.Named("number", number))
+		sql.Named("number", number),
+		sql.Named("status", ParcelStatusRegistered))
 
 	return err
 }
